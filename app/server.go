@@ -34,7 +34,6 @@ func main() {
 		}
 		conn.Write([]byte("+PONG\r\n"))
 	}
-	conn.Write([]byte("+PONG\r\n"))
 
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
