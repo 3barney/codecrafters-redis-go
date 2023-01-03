@@ -31,10 +31,11 @@ func main() {
 		go handleConnection(conn)
 	}
 
-	// defer conn.Close()
 }
 
 func handleConnection(conn net.Conn) {
+	defer conn.Close()
+
 	for {
 		fmt.Println("Connection Openned")
 		buffer := make([]byte, 1024)
