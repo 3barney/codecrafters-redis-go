@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
-
-	// Uncomment this block to pass the first stage
 	"net"
 	"os"
 )
@@ -12,8 +12,6 @@ import (
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
-
-	// Uncomment this block to pass the first stage
 
 	l, err := net.Listen("tcp", "0.0.0.0:6379")
 	if err != nil {
@@ -37,16 +35,27 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	for {
-		fmt.Println("Connection Openned")
-		buffer := make([]byte, 1024)
 
-		if _, err := conn.Read(buffer); err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				fmt.Println("error reading from client", err.Error())
-			}
+		value, err := DecodeRESP(bufio.NewReader(conn))
+		if errors.Is(err, io.EOF) {
+			break
 		}
-		conn.Write([]byte("+PONG\r\n"))
+
+		if err != nil {
+			fmt.Println("Error decoding RESP: ", err.Error())
+			return // Ignore clients that we fail to read from
+		}
+
+		command := value.Array()[0].String()
+		args := value.Array()[1:]
+
+		switch command {
+		case "ping":
+			conn.Write([]byte("+PONG\r\n"))
+		case "echo":
+			conn.Write([]byte(fmt.Sprintf("$%d\r\n%s\r\n", len(args[0].String()), args[0].String())))
+		default:
+			conn.Write([]byte("-ERR unknown command '" + command + "'\r\n"))
+		}
 	}
 }
